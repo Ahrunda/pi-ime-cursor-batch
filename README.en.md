@@ -71,6 +71,8 @@ pi install git:github.com/Ahrunda/pi-ime-cursor-batch
 cp extensions/ime-cursor-batch.ts ~/.pi/agent/extensions/
 ```
 
+Method 3 in one command: `./install.sh` (re-run it to re-sync).
+
 Restart pi (or `/reload`). No configuration needed.
 
 ## Remove / disable

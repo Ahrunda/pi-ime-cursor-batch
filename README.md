@@ -66,6 +66,8 @@ pi install git:github.com/Ahrunda/pi-ime-cursor-batch
 cp extensions/ime-cursor-batch.ts ~/.pi/agent/extensions/
 ```
 
+方式 3 也可以一条命令完成：`./install.sh`（重复运行即同步到最新）。
+
 装完**重开 pi**（或 `/reload`）即可，不需要任何配置。
 
 ## 撤销 / 关闭
