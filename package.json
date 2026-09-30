@@ -5,6 +5,10 @@
   "keywords": ["pi-package", "pi", "ime", "fcitx5", "konsole", "tui"],
   "license": "MIT",
   "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/Ahrunda/pi-ime-cursor-batch.git" },
+  "bugs": { "url": "https://github.com/Ahrunda/pi-ime-cursor-batch/issues" },
+  "homepage": "https://github.com/Ahrunda/pi-ime-cursor-batch#readme",
+  "files": ["extensions", "docs", "tools", "install.sh"],
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
   }
