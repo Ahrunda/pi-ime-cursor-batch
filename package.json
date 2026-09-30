@@ -1,0 +1,11 @@
+{
+  "name": "pi-ime-cursor-batch",
+  "version": "0.1.0",
+  "description": "Stop IME candidate-window flicker in pi's main-screen TUI: batch each frame's terminal writes and keep the hardware-cursor position inside the terminal's synchronized-output block.",
+  "keywords": ["pi-package", "pi", "ime", "fcitx5", "konsole", "tui"],
+  "license": "MIT",
+  "type": "module",
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  }
+}

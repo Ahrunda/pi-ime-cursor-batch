@@ -1,0 +1,128 @@
+--- tui-main-screen.ts	2026-09-30 20:35:16.718034881 +0800
++++ tui-main-screen.patched.ts	2026-09-30 20:35:31.733862651 +0800
+@@ -299,10 +299,14 @@
+ 				}
+ 				output.append(line);
+ 			}
+-			output.append("\x1b[?2026l"); // End synchronized output
+-			output.flush();
+ 			this.cursorRow = Math.max(0, newLines.length - 1);
+ 			this.hardwareCursorRow = this.cursorRow;
++			// Position the hardware cursor before closing the synchronized-output block: terminals sample
++			// the IME cursor rect on every write, so a separate write after "\x1b[?2026l" would report the
++			// end of the last written (padded) line instead of the editor cursor.
++			this.positionHardwareCursor(cursorPos, newLines.length, output);
++			output.append("\x1b[?2026l"); // End synchronized output
++			output.flush();
+ 			// Reset max lines when clearing, otherwise track growth
+ 			if (clear) {
+ 				this.maxLinesRendered = newLines.length;
+@@ -311,7 +315,6 @@
+ 			}
+ 			const bufferLength = Math.max(height, newLines.length);
+ 			this.previousViewportTop = Math.max(0, bufferLength - height);
+-			this.positionHardwareCursor(cursorPos, newLines.length);
+ 			this.previousLines = newLines;
+ 			this.previousKittyImageIds = this.collectKittyImageIds(newLines);
+ 			this.previousWidth = width;
+@@ -432,12 +435,14 @@
+ 				if (moveBack > 0) {
+ 					output.append(`\x1b[${moveBack}A`);
+ 				}
+-				output.append("\x1b[?2026l");
+-				output.flush();
+ 				this.cursorRow = targetRow;
+ 				this.hardwareCursorRow = targetRow;
++				this.positionHardwareCursor(cursorPos, newLines.length, output);
++				output.append("\x1b[?2026l");
++				output.flush();
++			} else {
++				this.positionHardwareCursor(cursorPos, newLines.length);
+ 			}
+-			this.positionHardwareCursor(cursorPos, newLines.length);
+ 			this.previousLines = newLines;
+ 			this.previousKittyImageIds = this.collectKittyImageIds(newLines);
+ 			this.previousWidth = width;
+@@ -564,6 +569,18 @@
+ 			output.append(`\x1b[${extraLines}A`);
+ 		}
+ 
++		// Track cursor position for next render
++		// cursorRow tracks end of content (for viewport calculation)
++		// hardwareCursorRow tracks actual terminal cursor position (for movement)
++		this.cursorRow = Math.max(0, newLines.length - 1);
++		this.hardwareCursorRow = finalCursorRow;
++		// Track terminal's working area (grows but doesn't shrink unless cleared)
++		this.maxLinesRendered = Math.max(this.maxLinesRendered, newLines.length);
++		this.previousViewportTop = Math.max(prevViewportTop, finalCursorRow - height + 1);
++
++		// Position hardware cursor for IME inside the synchronized-output block (see fullRender).
++		this.positionHardwareCursor(cursorPos, newLines.length, output);
++
+ 		output.append("\x1b[?2026l"); // End synchronized output
+ 
+ 		if (process.env.PI_TUI_DEBUG === "1") {
+@@ -597,18 +614,6 @@
+ 
+ 		output.flush();
+ 
+-		// Track cursor position for next render
+-		// cursorRow tracks end of content (for viewport calculation)
+-		// hardwareCursorRow tracks actual terminal cursor position (for movement)
+-		this.cursorRow = Math.max(0, newLines.length - 1);
+-		this.hardwareCursorRow = finalCursorRow;
+-		// Track terminal's working area (grows but doesn't shrink unless cleared)
+-		this.maxLinesRendered = Math.max(this.maxLinesRendered, newLines.length);
+-		this.previousViewportTop = Math.max(prevViewportTop, finalCursorRow - height + 1);
+-
+-		// Position hardware cursor for IME
+-		this.positionHardwareCursor(cursorPos, newLines.length);
+-
+ 		this.previousLines = newLines;
+ 		this.previousKittyImageIds = this.collectKittyImageIds(newLines);
+ 		this.previousWidth = width;
+@@ -619,10 +624,21 @@
+ 	 * Position the hardware cursor for IME candidate window.
+ 	 * @param cursorPos The cursor position extracted from rendered output, or null
+ 	 * @param totalLines Total number of rendered lines
++	 * @param frame Optional frame writer; when passed, the cursor sequences are appended to the
++	 * in-flight frame so they stay inside its synchronized-output block and the terminal samples a
++	 * single cursor position per frame (mirrors the alt-screen renderer).
+ 	 */
+-	private positionHardwareCursor(cursorPos: { row: number; col: number } | null, totalLines: number): void {
++	private positionHardwareCursor(
++		cursorPos: { row: number; col: number } | null,
++		totalLines: number,
++		frame?: { append(data: string): void },
++	): void {
+ 		if (!cursorPos || totalLines <= 0) {
+-			this.terminal.hideCursor();
++			if (frame) {
++				frame.append("\x1b[?25l");
++			} else {
++				this.terminal.hideCursor();
++			}
+ 			return;
+ 		}
+ 
+@@ -642,11 +658,18 @@
+ 		buffer += `\x1b[${targetCol + 1}G`;
+ 
+ 		if (buffer) {
+-			this.terminal.write(buffer);
++			if (frame) {
++				frame.append(buffer);
++			} else {
++				this.terminal.write(buffer);
++			}
+ 		}
+ 
+ 		this.hardwareCursorRow = targetRow;
+-		if (this.getShowHardwareCursor()) {
++		if (frame) {
++			// Keep cursor visibility in the same write as the cursor position (alt-screen does this too).
++			frame.append(this.getShowHardwareCursor() ? "\x1b[?25h" : "\x1b[?25l");
++		} else if (this.getShowHardwareCursor()) {
+ 			this.terminal.showCursor();
+ 		} else {
+ 			this.terminal.hideCursor();
