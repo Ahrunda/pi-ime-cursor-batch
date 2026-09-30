@@ -17,7 +17,7 @@ What it reports
 
 The second check is the one that matters: if cursor bytes are written after the block is closed,
 terminals sample two different cursor positions per frame and IME candidate windows flicker
-(see docs/diagnosis.en.md). With the extension, frames end with something like
+(see docs/diagnosis.md). With the extension, frames end with something like
 `... ESC[1B ESC[1G ESC[?25l ESC[?2026l`.
 
 Note: use `-s 8000` when recording. With the default `-s 32`, long writes are truncated in the log

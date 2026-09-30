@@ -24,7 +24,7 @@
  * extension `import`ing `@earendil-works/pi-tui` gets a different module instance than the one that
  * is running. `process.stdout.write` is the only choke point that an extension can actually reach.
  *
- * Details, measurements and the upstream fix: see README.md (中文) / README.en.md and docs/.
+ * Details, measurements and the upstream fix: see README.md (English) / README.zh.md (中文) and docs/.
  *
  * Set `PI_IME_CURSOR_BATCH=0` to disable without uninstalling.
  */
